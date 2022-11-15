@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { BadRequestError, NotFoundError, UnAuthenticatedError } from '../errors/index.js'
 import mongoose from 'mongoose'
 import checkPermission from '../utils/checkPermission.js'
+import moment from 'moment'
 
 const createJob = async (req, res) => {
     const { company, position } = req.body
@@ -15,7 +16,7 @@ const createJob = async (req, res) => {
 }
 
 const getAllJobs = async (req, res) => {
-    const jobs = await Job.find({ createBy: Object(req.user.userId) })
+    const jobs = await Job.find({ createdBy: req.user.userId })
 
     // console.log(jobs)
     res.status(StatusCodes.OK).json({ jobs, totalJobs: jobs.length, numOfPages: 1 })
@@ -79,27 +80,44 @@ const showStats = async (req, res) => {
         declined: stats.declined || 0,
     }
 
-let monthlyApplications = await Job.aggregate([
-  { $match: { createdBy: mongoose.Types.ObjectId(req.user.userId) } },
-  {
-    $group: {
-      _id: {
-        year: {
-          $year: '$createdAt',
+    let monthlyApplications = await Job.aggregate([
+        { $match: { createdBy: mongoose.Types.ObjectId(req.user.userId) } },
+        {
+            $group: {
+                _id: {
+                    year: {
+                        $year: '$createdAt',
+                    },
+                    month: {
+                        $month: '$createdAt',
+                    },
+                },
+                count: { $sum: 1 },
+            },
         },
-        month: {
-          $month: '$createdAt',
-        },
-      },
-      count: { $sum: 1 },
-    },
-  },
-  { $sort: { '_id.year': -1, '_id.month': -1 } },
-  { $limit: 6 },
-]);
+        { $sort: { '_id.year': -1, '_id.month': -1 } },
+        { $limit: 6 },
+    ]);
+
+    // monthlyApplications = monthlyApplications
+    //     .map((item) => {
+    //         const {
+    //             _id: { year, month },
+    //             count,
+    //         } = item;
+    //         // accepts 0-11
+    //         const date = moment()
+    //             .month(month - 1)
+    //             .year(year)
+    //             .format('MMM Y');
+    //         return { date, count };
+    //     })
+    //     .reverse();
+
 
     res.status(StatusCodes.OK).json({ defaultStats, monthlyApplications })
 }
+
 
 
 export { createJob, deleteJob, getAllJobs, updateJob, showStats }
