@@ -4,12 +4,12 @@ const JobSchema = new mongoose.Schema({
     company: {
         type: String,
         required: [true, 'Please provide company'],
-        maxLength: 50,
+        maxlength: 50,
     },
     position: {
         type: String,
         required: [true, 'Please provide position'],
-        maxLength: 100,
+        maxlength: 100,
     },
     status: {
         type: String,
@@ -31,7 +31,8 @@ const JobSchema = new mongoose.Schema({
         ref: 'User',
         required: [true, 'Please provide user']
     }
-}, { timestamp: true })
+}, { timestamps: true })
 
 
 export default mongoose.model('Job',JobSchema)
+
