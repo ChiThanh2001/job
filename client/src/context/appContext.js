@@ -31,6 +31,8 @@ import {
     EDIT_JOB_ERROR,
     SHOW_STATS_BEGIN,
     SHOW_STATS_SUCCESS,
+    CLEAR_FILTERS,
+    CHANGE_PAGE,
 } from "./actions"
 import reducer from './reducers'
 
@@ -62,6 +64,11 @@ const initialState = {
     page: 1,
     stats: {},
     monthlyApplications: [],
+    search: '',
+    searchStatus: 'all',
+    searchType: 'all',
+    sort: 'latest',
+    sortOptions: ['latest', 'oldest', 'a-z', 'z-a']
 }
 
 const AppContext = createContext()
@@ -260,19 +267,24 @@ const AppProvider = ({ children }) => {
     }
 
     const getJobs = async () => {
-        let url = `/jobs`
-
+        const { page, search, searchStatus, searchType, sort } = state;
+        let url = `/jobs?page=${page}&status=${searchStatus}&jobType=${searchType}&sort=${sort}`;
+        if (search) {
+            url = url + `&search=${search}`
+        }
         dispatch({ type: GET_JOBS_BEGIN })
         try {
             const { data } = await authFetch(url)
             const { jobs, totalJobs, numberOfPages } = data
             dispatch({ type: GET_JOBS_SUCCESS, payload: { jobs, totalJobs, numberOfPages } })
         } catch (error) {
-            console.log(error.response)
+            logoutUser()
         }
 
         clearAlert()
     }
+
+
 
     const setEditJob = (id) => {
         dispatch({ type: SET_EDIT_JOB, payload: { id } })
@@ -300,7 +312,7 @@ const AppProvider = ({ children }) => {
             getJobs()
         } catch (error) {
             console.log(error.response)
-            // logoutUser()
+            logoutUser()
         }
     }
 
@@ -311,18 +323,25 @@ const AppProvider = ({ children }) => {
             dispatch({
                 type: SHOW_STATS_SUCCESS,
                 payload: {
-                    stats:data.defaultStats,
-                    monthlyApplications : data.monthlyApplications
+                    stats: data.defaultStats,
+                    monthlyApplications: data.monthlyApplications
                 }
             })
         } catch (error) {
-            console.log(error.response)
-            // logoutUser()
+            logoutUser()
         }
         clearAlert()
     }
 
-    return <AppContext.Provider value={{ ...state, displayAlert, registerUser, loginUser, setupUser, toggleSidebar, logoutUser, updateUser, handleChange, clearValues, createJob, getJobs, setEditJob, deleteJob, editJob, showStats }}>
+    const clearFilters = () => {
+        dispatch({ type: CLEAR_FILTERS })
+    }
+
+    const changePage = page => {
+        dispatch({ type: CHANGE_PAGE, payload: { page } })
+    }
+
+    return <AppContext.Provider value={{ ...state, displayAlert, registerUser, loginUser, setupUser, toggleSidebar, logoutUser, updateUser, handleChange, clearValues, createJob, getJobs, setEditJob, deleteJob, editJob, showStats, clearFilters, changePage }}>
         {children}
     </AppContext.Provider>
 }
